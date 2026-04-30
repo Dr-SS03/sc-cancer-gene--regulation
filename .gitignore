@@ -15,3 +15,7 @@ figures/
 *.joblib
 *.parquet
 *.tsv.gz
+!results/candidate_tf_report.tsv
+!results/geneformer_tf_perturbation_ranking.tsv
+!figures/tcga_skcm_top_tf_expression.png
+!figures/tcga_skcm_primary_vs_metastatic.png
