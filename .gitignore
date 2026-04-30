@@ -1,0 +1,16 @@
+__pycache__/
+.DS_Store
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+.venv/
+data/processed/
+results/
+figures/
+*.h5ad
+*.pt
+*.pkl
+*.joblib
+*.parquet
+*.tsv.gz
+!data/raw/GSE72056_melanoma_single_cell_revised_v2.txt.gz

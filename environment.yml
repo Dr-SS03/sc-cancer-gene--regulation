@@ -1,0 +1,24 @@
+name: sc-melanoma-geneformer
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.10
+  - pip
+  - pandas>=2.2
+  - numpy>=1.26
+  - scipy>=1.12
+  - scikit-learn>=1.5
+  - scanpy=1.10.*
+  - anndata=0.10.*
+  - pyarrow>=16
+  - seaborn>=0.13
+  - matplotlib>=3.8
+  - requests>=2.32
+  - pyyaml>=6.0
+  - pip:
+      - torch
+      - transformers>=4.40
+      - datasets>=2.19
+      - accelerate>=0.30
+      - git+https://huggingface.co/ctheodoris/Geneformer
