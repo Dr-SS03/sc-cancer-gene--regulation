@@ -36,6 +36,11 @@ TCGA_SKCM_PRIMARY_METASTATIC_CANDIDATES = [
     "sample_type",
     "sample_type.samples",
 ]
+CELLORACLE_BASE_GRN_LOCAL = REFS_DIR / "celloracle_human_base_grn.parquet"
+CELLORACLE_DOCKER_NOTE = (
+    "CellOracle native installation is not currently working in this local macOS arm64 environment. "
+    "Prefer Linux or Docker for the actual GRN and perturbation run."
+)
 
 MIN_GENES = 200
 MIN_CELLS = 3

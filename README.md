@@ -1,74 +1,76 @@
-# sc-melanoma-geneformer
+# sc-melanoma-celloracle
 
-Reproducible melanoma scRNA-seq project scaffold for **GSE72056 / Tirosh et al. 2016** with explicit preparation steps for a future Geneformer perturbation analysis and a bulk-expression validation layer against **TCGA-SKCM**.
+Melanoma scRNA-seq project scaffold for **GSE72056 / Tirosh et al. 2016** using **CellOracle** for GRN inference and in silico TF perturbation, with downstream validation against **TCGA-SKCM** bulk expression.
 
-## Project question
+## Why CellOracle
 
-Can a Geneformer-based perturbation workflow prioritize transcription factors whose simulated knockout reduces the malignant transcriptional state of melanoma cells, and do those TFs also show supportive expression patterns in TCGA-SKCM bulk RNA-seq?
+- The available Tirosh matrix is **log2(TPM+1)**, not raw UMI counts.
+- That makes it a poor fit for the official Geneformer tokenizer workflow.
+- CellOracle is a better match because it operates on normalized scRNA-seq matrices and models TF perturbation through an inferred regulatory network.
 
-At the moment, this repo does **not** answer that question with a valid Geneformer run on GSE72056, because the available Tirosh matrix is log2(TPM+1) rather than tokenizer-compliant raw counts.
+## Current status
 
-## Dataset choice
+- Data staging and Scanpy QC run locally.
+- The repo is now oriented around a **CellOracle-first** workflow.
+- No valid CellOracle perturbation result has been committed yet.
+- Earlier TF-IDF fallback outputs were removed from the scientific narrative because they were not Geneformer or CellOracle results.
+
+## Dataset summary
 
 - `GSE72056` metastatic melanoma single-cell RNA-seq from Tirosh et al. 2016.
-- Local source used during development: `GSE72056_melanoma_single_cell_revised_v2.txt.gz`
-- The raw GEO download is **not tracked in Git**. Use `scripts/00_prepare_data.py` to download it directly or point the script to a local copy.
-- Matrix format: genes on rows, cells on columns, with metadata embedded in the first three rows.
-- Observed in the staged file:
-- `4,645` total cells
-- `19` tumors / patients
-- `1,257` malignant cells (`malignant == 2`)
-- `3,256` non-malignant cells (`malignant == 1`)
-- `132` unresolved cells (`malignant == 0`)
+- `4,645` total cells across `19` tumors.
+- `1,257` malignant cells.
+- `3,256` non-malignant cells.
+- `132` unresolved cells.
 
-## Analysis strategy
+## Workflow
 
-1. Parse the Tirosh matrix into a clean expression table and cell metadata.
-2. Build an `AnnData` object and perform light QC / filtering with Scanpy.
-3. Convert malignant and reference cells into ranked gene programs.
-4. Prepare an `official` Geneformer route that requires raw-count `.h5ad` or `.loom` with `ensembl_id` and `n_counts`, matching the current Geneformer tokenizer documentation.
-5. Provide a clearly labeled `ranked_fallback` diagnostic baseline for software plumbing only.
-6. Cross-check candidate TFs in TCGA-SKCM bulk RNA-seq once a biologically valid perturbation signal exists.
+1. Parse the Tirosh matrix into expression and metadata tables.
+2. Build a filtered `AnnData` object with Scanpy.
+3. Prepare a CellOracle-ready `AnnData` with embeddings and malignant-cell annotations.
+4. Load a human promoter-based base GRN prior for CellOracle.
+5. Infer regulatory links with CellOracle.
+6. Simulate TF perturbations in malignant melanoma cells.
+7. Validate shortlisted TFs against TCGA-SKCM bulk expression.
 
 ## Repo layout
 
-- `config/config.py`: central paths, URLs, thresholds, and seed TF list.
-- `scripts/00_prepare_data.py`: copy or download GSE72056, decompress it, split metadata and expression tables, and write a dataset summary.
-- `scripts/01_qc_filter.py`: create a Scanpy `AnnData` object, annotate malignant status, and save a filtered `.h5ad`.
-- `scripts/02_geneformer_inputs.py`: convert expression values into per-cell ranked gene lists and export malignant/reference metadata.
-- `scripts/03_geneformer_perturbation.py`: contains the unimplemented official Geneformer entry point plus a diagnostic fallback baseline that should not be interpreted biologically.
-- `scripts/04_tcga_skcm_validation.py`: download TCGA-SKCM expression / phenotype tables, summarize TF bulk behavior, and write plotting tables.
-- `scripts/05_build_report.py`: merge perturbation and TCGA summaries into a diagnostic table and fail fast on unsupported modes.
+- `config/config.py`: paths, URLs, thresholds, TF seed list, and CellOracle prior locations.
+- `scripts/00_prepare_data.py`: download or stage GSE72056 and split metadata from expression.
+- `scripts/01_qc_filter.py`: create and QC the main `AnnData`.
+- `scripts/02_celloracle_preprocess.py`: prepare a CellOracle-ready `AnnData` with embeddings and malignant subsets.
+- `scripts/03_celloracle_grn.py`: build the Oracle object, import the base GRN prior, and infer links.
+- `scripts/04_celloracle_perturbation.py`: simulate TF perturbations and rank embedding shifts.
+- `scripts/04_tcga_skcm_validation.py`: summarize TF expression in TCGA-SKCM bulk data.
+- `scripts/05_build_report.py`: merge CellOracle perturbation outputs with TCGA summaries.
 
 ## Quick start
 
 ```bash
-conda env create -f environment.yml
-conda activate sc-melanoma-geneformer
-
 python scripts/00_prepare_data.py
 python scripts/01_qc_filter.py
-python scripts/02_geneformer_inputs.py
-python scripts/03_geneformer_perturbation.py --mode ranked_fallback
-python scripts/04_tcga_skcm_validation.py
+python scripts/02_celloracle_preprocess.py
+python scripts/03_celloracle_grn.py --base-grn /path/to/celloracle_human_base_grn.parquet
+python scripts/04_celloracle_perturbation.py --tf MITF --tf SOX10 --tf TFAP2A
+python scripts/04_tcga_skcm_validation.py --source cbioportal \
+  --expr refs/skcm_tcga_pan_can_atlas_2018_data_mrna_seq_v2_rsem.txt \
+  --phenotype refs/skcm_tcga_pan_can_atlas_2018_data_clinical_sample.txt \
+  --survival refs/skcm_tcga_pan_can_atlas_2018_data_clinical_patient.txt
 python scripts/05_build_report.py
 ```
 
-## Important caveats
+## Installation note
 
-- The staged Tirosh matrix is a **preprocessed log2(TPM+1)** table, not raw UMI counts. According to the current Geneformer tokenizer documentation, the official tokenizer expects raw-count `.h5ad` or `.loom` with `ensembl_id` and `n_counts`.
-- For that reason, the executed `ranked_fallback` mode is **not Geneformer** and should not be described as a foundation-model perturbation analysis.
-- The `ranked_fallback` output is a TF-IDF plus logistic-regression baseline built from ranked gene tokens. Removing one TF token from a 2048-token document produces extremely small score shifts, so those perturbation values are best treated as software diagnostics rather than biology.
-- Any ranking that multiplies fallback perturbation scores by melanoma bulk expression is misleading and should not be used for candidate nomination.
-- The default Geneformer model on Hugging Face is newer than the original 2023 paper release. This repo pins Geneformer through the install command and keeps the workflow explicit in case you want to swap to a different released checkpoint later.
-- TCGA-SKCM validation in this repo now produces sample-level and group-level tables designed for downstream plots, but it still depends on the columns exposed by the UCSC Xena phenotype release you download at run time.
+CellOracle installation on this local macOS arm64 environment currently fails in native dependencies such as `velocyto` and `gimmemotifs` because of compiler and OpenMP issues. The highest-confidence path is to run this workflow in a Linux or Docker-backed environment following the official CellOracle documentation.
+
+## Scientific guardrails
+
+- Do not describe this repo as having completed a Geneformer analysis on GSE72056.
+- Do not interpret the earlier removed TF-IDF fallback outputs as biology.
+- Treat TCGA validation as a downstream cross-check only after a real CellOracle perturbation result exists.
 
 ## Primary sources
 
 - Tirosh et al. 2016, Science: [GSE72056](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE72056)
-- Geneformer model card and docs: [Hugging Face](https://huggingface.co/ctheodoris/Geneformer), [documentation](https://geneformer.readthedocs.io/en/latest/)
-- TCGA / UCSC Xena: [UCSC Xena public data](https://xena.ucsc.edu/public/), [GDC data types](https://www.cancer.gov/ccg/research/genome-sequencing/tcga/using-tcga-data/types)
-
-## Status
-
-This repo is structured as a cleaner public scaffold: raw GEO input files stay outside Git history, the official Geneformer path is explicitly marked as pending valid raw-count inputs, and the TCGA validation layer is ready once a real perturbation result exists.
+- CellOracle documentation: [official docs](https://morris-lab.github.io/CellOracle.documentation/)
+- TCGA melanoma bulk cohort used here: cBioPortal SKCM PanCancer Atlas 2018 and related public clinical tables
