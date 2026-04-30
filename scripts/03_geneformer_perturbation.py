@@ -89,13 +89,22 @@ def run_ranked_fallback(ranked: pd.DataFrame) -> dict[str, float | list[str]]:
                 "mean_probability_drop": float(np.mean(delta)),
                 "median_probability_drop": float(np.median(delta)),
                 "mode": "ranked_fallback",
+                "interpretation": "diagnostic_only",
             }
         )
 
-    pd.DataFrame(perturbation_rows).sort_values(
-        "mean_probability_drop", ascending=False
-    ).to_csv(RESULTS_DIR / "geneformer_tf_perturbation_ranking.tsv", sep="\t", index=False)
-    return {"classifier_auc": auc, "mode": "ranked_fallback", "seed_tfs": SEED_TFS}
+    out = pd.DataFrame(perturbation_rows).sort_values("mean_probability_drop", ascending=False)
+    out.to_csv(RESULTS_DIR / "geneformer_tf_perturbation_ranking.tsv", sep="\t", index=False)
+    return {
+        "classifier_auc": auc,
+        "mode": "ranked_fallback",
+        "seed_tfs": SEED_TFS,
+        "status": "diagnostic_only",
+        "warning": (
+            "ranked_fallback is a TF-IDF baseline, not Geneformer. "
+            "Do not interpret the perturbation magnitudes biologically."
+        ),
+    }
 
 
 def run_official_geneformer(ranked: pd.DataFrame) -> dict[str, float | list[str]]:
