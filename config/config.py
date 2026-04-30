@@ -22,6 +22,20 @@ TCGA_SKCM_PHENOTYPE_URL = (
 TCGA_SKCM_SURVIVAL_URL = (
     "https://gdc.xenahubs.net/download/TCGA-SKCM.survival.tsv"
 )
+TCGA_SKCM_EXPRESSION_LOCAL = REFS_DIR / "TCGA-SKCM.htseq_fpkm-uq.tsv.gz"
+TCGA_SKCM_PHENOTYPE_LOCAL = REFS_DIR / "TCGA-SKCM.GDC_phenotype.tsv.gz"
+TCGA_SKCM_SURVIVAL_LOCAL = REFS_DIR / "TCGA-SKCM.survival.tsv"
+TCGA_SKCM_SAMPLE_TYPE_CANDIDATES = [
+    "_sample_type",
+    "sample_type",
+    "sample_type.samples",
+    "definition",
+]
+TCGA_SKCM_PRIMARY_METASTATIC_CANDIDATES = [
+    "_sample_type",
+    "sample_type",
+    "sample_type.samples",
+]
 
 MIN_GENES = 200
 MIN_CELLS = 3

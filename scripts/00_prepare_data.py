@@ -21,6 +21,7 @@ def ensure_raw_dataset(local_gz: str | None) -> Path:
         if src != target:
             shutil.copy2(src, target)
     elif not target.exists():
+        print(f"Downloading {GSE72056_URL} -> {target}")
         urllib.request.urlretrieve(GSE72056_URL, target)
     return target
 

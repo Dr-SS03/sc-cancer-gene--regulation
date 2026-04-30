@@ -4,6 +4,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .venv/
+refs/
+data/raw/
 data/processed/
 results/
 figures/
@@ -13,4 +15,3 @@ figures/
 *.joblib
 *.parquet
 *.tsv.gz
-!data/raw/GSE72056_melanoma_single_cell_revised_v2.txt.gz
